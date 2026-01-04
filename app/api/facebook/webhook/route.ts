@@ -6,6 +6,8 @@ const OUT_OF_QUOTA_MESSAGE = "🙏 วันนี้พ่อหมอพัก
 
 
 
+import { NextRequest, NextResponse } from "next/server";
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
@@ -13,22 +15,19 @@ export async function GET(req: NextRequest) {
   const token = searchParams.get("hub.verify_token");
   const challenge = searchParams.get("hub.challenge");
 
-  // 🔴 debug (ดูใน Vercel logs)
-  console.log("VERIFY MODE:", mode);
-  console.log("VERIFY TOKEN:", token);
-  console.log("CHALLENGE:", challenge);
+  console.log("=== FACEBOOK VERIFY ===");
+  console.log("mode:", mode);
+  console.log("verify_token:", token);
+  console.log("challenge:", challenge);
+  console.log("env VERIFY_TOKEN:", process.env.VERIFY_TOKEN);
 
-  if (
-    mode === "subscribe" &&
-    token === process.env.VERIFY_TOKEN
-  ) {
-    // ✅ ต้องส่ง challenge กลับไปตรงๆ
-    return new NextResponse(challenge, { status: 200 });
+  if (mode === "subscribe" && token === process.env.VERIFY_TOKEN) {
+    return new NextResponse(challenge ?? "", { status: 200 });
   }
 
-  // ❌ ถ้าไม่ตรง
   return new NextResponse("Forbidden", { status: 403 });
 }
+
 
 
 export async function POST(req: NextRequest) {
