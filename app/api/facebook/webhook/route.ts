@@ -4,6 +4,33 @@ import { getRandomFortune } from "@/lib/fortune";
 
 const OUT_OF_QUOTA_MESSAGE = "🙏 วันนี้พ่อหมอพักแล้ว มาพรุ่งนี้ใหม่นะครับ";
 
+
+
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+
+  const mode = searchParams.get("hub.mode");
+  const token = searchParams.get("hub.verify_token");
+  const challenge = searchParams.get("hub.challenge");
+
+  // 🔴 debug (ดูใน Vercel logs)
+  console.log("VERIFY MODE:", mode);
+  console.log("VERIFY TOKEN:", token);
+  console.log("CHALLENGE:", challenge);
+
+  if (
+    mode === "subscribe" &&
+    token === process.env.VERIFY_TOKEN
+  ) {
+    // ✅ ต้องส่ง challenge กลับไปตรงๆ
+    return new NextResponse(challenge, { status: 200 });
+  }
+
+  // ❌ ถ้าไม่ตรง
+  return new NextResponse("Forbidden", { status: 403 });
+}
+
+
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const value = body?.entry?.[0]?.changes?.[0]?.value;
