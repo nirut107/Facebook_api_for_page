@@ -1,12 +1,9 @@
 
-import { getThaiWeekday } from "@/lib/horoscope";
+
 import { getRandomFortune } from "@/lib/fortune";
 import { NextRequest, NextResponse } from "next/server";
-
-const OUT_OF_QUOTA_MESSAGE = "🙏 วันนี้พ่อหมอพักแล้ว มาพรุ่งนี้ใหม่นะครับ";
-
-
-
+import { getPostAction } from "@/lib/getPostAction";
+import { reply } from "@/lib/facebookReply";
 
 
 export async function GET(req: NextRequest) {
@@ -30,46 +27,31 @@ export async function GET(req: NextRequest) {
 }
 
 
-
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const value = body?.entry?.[0]?.changes?.[0]?.value;
 
   if (!value?.comment_id) return NextResponse.json({ ok: true });
-  if (value.post_id !== process.env.TARGET_POST_ID)
-    return NextResponse.json({ ignored: true });
 
-  const birthText = value.message;
-  const weekday = getThaiWeekday(birthText);
-
-  if (!weekday) {
-    await reply(value.comment_id, "❌ กรุณาพิมพ์วันเกิด เช่น 12/03/1998");
-    return NextResponse.json({ ok: true });
+  console.log(value.post_id)
+  const config = getPostAction(value.post_id);
+  if (!config) {
+    return NextResponse.json({ ignored: "post_not_configured" });
   }
 
-  // 👇 เรียก AI แบบ safe
-  const fortune = await getRandomFortune();
+  const text = (value.message || "").trim();
 
-  if (!fortune) {
-    // 🔴 quota หมด / error
-    await reply(value.comment_id, OUT_OF_QUOTA_MESSAGE);
-    return NextResponse.json({ quota: "exceeded" });
+  if (
+    config.action === "FORTUNE" &&
+    text === config.triggerText
+  ) {
+    const fortune = getRandomFortune();
+    await reply(
+      value.comment_id,
+      `🔮 คำทำนายของคุณ\n${fortune}`
+    );
   }
 
-  await reply(value.comment_id, `🎂 คุณเกิด${weekday}\n🔮 ${fortune}`);
 
   return NextResponse.json({ ok: true });
-}
-
-async function reply(commentId: string, message: string) {
-  if (!process.env.PAGE_TOKEN) return;
-
-  await fetch(`https://graph.facebook.com/v19.0/${commentId}/comments`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      message,
-      access_token: process.env.PAGE_TOKEN,
-    }),
-  });
 }
