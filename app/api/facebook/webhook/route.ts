@@ -1,12 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
+
 import { getThaiWeekday } from "@/lib/horoscope";
 import { getRandomFortune } from "@/lib/fortune";
+import { NextRequest, NextResponse } from "next/server";
 
 const OUT_OF_QUOTA_MESSAGE = "🙏 วันนี้พ่อหมอพักแล้ว มาพรุ่งนี้ใหม่นะครับ";
 
 
 
-import { NextRequest, NextResponse } from "next/server";
+
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
