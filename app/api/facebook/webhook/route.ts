@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
 
 
 export async function POST(req: NextRequest) {
+  console.log("🔥 PAGE FEED WEBHOOK HIT");
   const body = await req.json();
   const value = body?.entry?.[0]?.changes?.[0]?.value;
 
