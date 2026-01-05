@@ -60,14 +60,14 @@ export async function POST(req: NextRequest) {
   // 4️⃣ ตรวจ trigger text
   console.log("trigger text");
   const text = (value.message || "").trim();
-  console.log("trigger text:", text);
+  console.log("trigger text:", text, config.triggerText);
   if (config.triggerText && text !== config.triggerText) return ok();
 
-  if (await hasUserUsedPostToday(userId, postId)) {
-    await reply(commentId, config.havesent);
-    await markCommentProcessed(commentId);
-    return ok();
-  }
+  // if (await hasUserUsedPostToday(userId, postId)) {
+  //   await reply(commentId, config.havesent);
+  //   await markCommentProcessed(commentId);
+  //   return ok();
+  // }
 
   //  ตอบจริง
   console.log("TODO");
