@@ -1,4 +1,4 @@
-import { reply } from "../../../../../lib/facebookReply";
+import { reply } from "../facebookReply";
 
 export const FORTUNES: string[] = [
   // 1–10 ดวงโดยรวม
@@ -122,7 +122,6 @@ export const FORTUNES: string[] = [
   "ขอให้วันนี้เป็นวันที่ดีของคุณ",
 ];
 
-
 import { put } from "@vercel/blob";
 
 export async function generateFortuneImage(prompt: string) {
@@ -147,7 +146,6 @@ export async function generateFortuneImage(prompt: string) {
 
   return blob.url;
 }
-
 
 export async function getRandomFortune(comment_id: string) {
   const fortune = FORTUNES[Math.floor(Math.random() * FORTUNES.length)];

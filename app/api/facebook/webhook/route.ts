@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPostAction } from "./postConfig";
-import { reply } from "@/lib/facebookReply";
+import { reply } from "@/app/api/facebook/webhook/facebookReply";
 import {
   isCommentProcessed,
   markCommentProcessed,

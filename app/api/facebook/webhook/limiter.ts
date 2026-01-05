@@ -1,82 +1,74 @@
-import { kv } from "@vercel/kv";
+import { redis } from "./redis";
 
 /* ======================
    Key builders
 ====================== */
 export const kvKey = {
-  comment: (commentId: string) =>
-    `comment:${commentId}`,
-
+  comment: (commentId: string) => `comment:${commentId}`,
   userPostDay: (userId: string, postId: string, day: string) =>
     `user:${userId}:post:${postId}:day:${day}`,
-
   pageDay: (pageId: string, day: string) =>
     `page:${pageId}:day:${day}`,
 };
 
-/* ======================
-   Time helpers
-====================== */
 export function getTodayKey(date = new Date()) {
   return date.toISOString().slice(0, 10).replace(/-/g, "");
 }
 
 /* ======================
-   Comment-level (anti retry)
+   Comment-level
 ====================== */
 export async function isCommentProcessed(commentId: string) {
-  return Boolean(await kv.get(kvKey.comment(commentId)));
+  return (await redis.get(kvKey.comment(commentId))) !== null;
 }
 
 export async function markCommentProcessed(
   commentId: string,
-  ttlSeconds = 60 * 60 * 24 // 1 day
+  ttl = 86400
 ) {
-  await kv.set(kvKey.comment(commentId), "1", { ex: ttlSeconds });
+  await redis.set(kvKey.comment(commentId), "1", "EX", ttl);
 }
 
 /* ======================
-   User / Post / Day limiter
+   User / Post / Day
 ====================== */
 export async function hasUserUsedPostToday(
   userId: string,
   postId: string,
   day = getTodayKey()
 ) {
-  return Boolean(await kv.get(kvKey.userPostDay(userId, postId, day)));
+  return (
+    (await redis.get(kvKey.userPostDay(userId, postId, day))) !==
+    null
+  );
 }
 
 export async function markUserUsedPostToday(
   userId: string,
   postId: string,
   day = getTodayKey(),
-  ttlSeconds = 60 * 60 * 24 // 24h
+  ttl = 86400
 ) {
-  await kv.set(
+  await redis.set(
     kvKey.userPostDay(userId, postId, day),
     "1",
-    { ex: ttlSeconds }
+    "EX",
+    ttl
   );
 }
 
 /* ======================
-   Page-level daily quota (optional)
+   Page daily quota (optional)
 ====================== */
-export async function getPageUsageToday(
-  pageId: string,
-  day = getTodayKey()
-): Promise<number> {
-  const val = await kv.get<number>(kvKey.pageDay(pageId, day));
-  return Number(val || 0);
-}
-
 export async function incrementPageUsageToday(
   pageId: string,
   day = getTodayKey(),
-  ttlSeconds = 60 * 60 * 24
-): Promise<number> {
+  ttl = 86400
+) {
   const key = kvKey.pageDay(pageId, day);
-  const current = Number((await kv.get<number>(key)) || 0) + 1;
-  await kv.set(key, current, { ex: ttlSeconds });
-  return current;
+  const count = await redis.incr(key);
+  if (count === 1) {
+    await redis.expire(key, ttl);
+  }
+  return count;
 }
