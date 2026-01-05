@@ -1,4 +1,4 @@
-import { redis } from "./redis";
+import { getRedis } from "./redis";
 
 /* ======================
    Key builders
@@ -16,9 +16,10 @@ export function getTodayKey(date = new Date()) {
 }
 
 /* ======================
-   Comment-level
+   Comment-level (anti retry)
 ====================== */
 export async function isCommentProcessed(commentId: string) {
+  const redis = await getRedis();
   return (await redis.get(kvKey.comment(commentId))) !== null;
 }
 
@@ -26,17 +27,21 @@ export async function markCommentProcessed(
   commentId: string,
   ttl = 86400
 ) {
-  await redis.set(kvKey.comment(commentId), "1", "EX", ttl);
+  const redis = await getRedis();
+  await redis.set(kvKey.comment(commentId), "1", {
+    EX: ttl,
+  });
 }
 
 /* ======================
-   User / Post / Day
+   User / Post / Day limiter
 ====================== */
 export async function hasUserUsedPostToday(
   userId: string,
   postId: string,
   day = getTodayKey()
 ) {
+  const redis = await getRedis();
   return (
     (await redis.get(kvKey.userPostDay(userId, postId, day))) !==
     null
@@ -49,11 +54,11 @@ export async function markUserUsedPostToday(
   day = getTodayKey(),
   ttl = 86400
 ) {
+  const redis = await getRedis();
   await redis.set(
     kvKey.userPostDay(userId, postId, day),
     "1",
-    "EX",
-    ttl
+    { EX: ttl }
   );
 }
 
@@ -65,10 +70,15 @@ export async function incrementPageUsageToday(
   day = getTodayKey(),
   ttl = 86400
 ) {
+  const redis = await getRedis();
   const key = kvKey.pageDay(pageId, day);
+
   const count = await redis.incr(key);
+
+  // ตั้ง TTL เฉพาะครั้งแรก
   if (count === 1) {
     await redis.expire(key, ttl);
   }
+
   return count;
 }

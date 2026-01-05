@@ -1,5 +1,22 @@
-import Redis from "ioredis";
+import { createClient } from "redis";
 
-export const redis = new Redis(process.env.REDIS_URL!, {
-  maxRetriesPerRequest: null,
-});
+let client: ReturnType<typeof createClient> | null = null;
+
+export async function getRedis() {
+  if (!client) {
+    client = createClient({
+      url: process.env.REDIS_URL,
+      socket: {
+        connectTimeout: 10000,
+      },
+    });
+
+    client.on("error", (err) => {
+      console.error("[Redis error]", err.message);
+    });
+
+    await client.connect();
+  }
+
+  return client;
+}
