@@ -7,7 +7,7 @@ export const POST_CONFIG: Record<
     triggerText?: string;
   }
 > = {
-  "1234567890_1111111111": {
+  "898138396724948_122094158751206345": {
     action: "FORTUNE",
     triggerText: "ทำนายให้ข้าเถิด",
   },
