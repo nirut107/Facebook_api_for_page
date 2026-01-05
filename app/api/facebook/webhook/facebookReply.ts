@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 export async function reply(commentId: string, message: string) {
+  console.log("TOKEN", process.env.PAGE_TOKEN, "comment Id:", commentId);
   if (!process.env.PAGE_TOKEN) return;
 
   await fetch(`https://graph.facebook.com/v19.0/${commentId}/comments`, {
