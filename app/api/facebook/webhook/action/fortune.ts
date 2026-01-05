@@ -152,5 +152,5 @@ export async function getRandomFortune(comment_id: string) {
 
   const prompt = `thai fortune tarot card, destiny, luck, spiritual`;
   const imageUrl = await generateFortuneImage(prompt);
-  await reply(comment_id, `🔮 คำทำนายของคุณ\n${fortune}`);
+  await reply(comment_id, `🔮 คำทำนายของคุณ\n${fortune}\n\n${imageUrl}`);
 }
