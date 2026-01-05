@@ -1,10 +1,12 @@
-
-
-import { getRandomFortune } from "@/lib/fortune";
 import { NextRequest, NextResponse } from "next/server";
-import { getPostAction } from "@/lib/getPostAction";
+import { getPostAction } from "./postConfig";
 import { reply } from "@/lib/facebookReply";
-
+import {
+  isCommentProcessed,
+  markCommentProcessed,
+  hasUserUsedPostToday,
+  markUserUsedPostToday,
+} from "./limiter";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -26,33 +28,45 @@ export async function GET(req: NextRequest) {
   return new NextResponse("Forbidden", { status: 403 });
 }
 
-
 export async function POST(req: NextRequest) {
   console.log("🔥 PAGE FEED WEBHOOK HIT");
   const body = await req.json();
   const value = body?.entry?.[0]?.changes?.[0]?.value;
+  if (!value?.comment_id) return ok();
 
-  if (!value?.comment_id) return NextResponse.json({ ok: true });
+  const postId = value.post_id;
+  const userId = value.from?.id;
+  const commentId = value.comment_id;
+  const pageId = process.env.PAGE_ID!;
 
-  console.log(value.post_id)
-  const config = getPostAction(value.post_id);
-  if (!config) {
-    return NextResponse.json({ ignored: "post_not_configured" });
-  }
+  // 1️⃣ กันลูป: ไม่ตอบ comment จากเพจ
+  if (value.from?.id === pageId) return ok();
 
+  // 2️⃣ กัน webhook ซ้ำ
+  if (await isCommentProcessed(commentId)) return ok();
+
+  console.log(value.post_id);
+  // 3️⃣ ตรวจ post config
+  const config = getPostAction(postId);
+  if (!config) return ok();
+
+  // 4️⃣ ตรวจ trigger text
   const text = (value.message || "").trim();
+  if (config.triggerText && text !== config.triggerText) return ok();
 
-  if (
-    config.action === "FORTUNE" &&
-    text === config.triggerText
-  ) {
-    const fortune = getRandomFortune();
-    await reply(
-      value.comment_id,
-      `🔮 คำทำนายของคุณ\n${fortune}`
-    );
+  if (await hasUserUsedPostToday(userId, postId)) {
+    await reply(commentId, config.havesent);
+    await markCommentProcessed(commentId);
+    return ok();
   }
 
+  //  ตอบจริง
+  await config.todo(commentId);
 
-  return NextResponse.json({ ok: true });
+  // บันทึก state
+  await markCommentProcessed(commentId);
+  await markUserUsedPostToday(userId, postId);
+  return ok();
 }
+
+const ok = () => NextResponse.json({ ok: true });

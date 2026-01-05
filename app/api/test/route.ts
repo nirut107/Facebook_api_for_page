@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { HfInference } from "@huggingface/inference";
-import { getRandomFortune } from "@/lib/fortune";
+import { getRandomFortune } from "@/app/api/facebook/webhook/action/fortune";
 
 const hf = new HfInference(process.env.HF_API_KEY);
 
