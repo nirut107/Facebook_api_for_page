@@ -149,8 +149,9 @@ export async function generateFortuneImage(prompt: string) {
 
 export async function getRandomFortune(comment_id: string) {
   const fortune = FORTUNES[Math.floor(Math.random() * FORTUNES.length)];
-
+  console.log("Fortune", fortune)
   const prompt = `thai fortune tarot card, destiny, luck, spiritual`;
   const imageUrl = await generateFortuneImage(prompt);
+  console.log("Fortune", imageUrl)
   await reply(comment_id, `🔮 คำทำนายของคุณ\n${fortune}\n\n${imageUrl}`);
 }

@@ -38,20 +38,29 @@ export async function POST(req: NextRequest) {
   const userId = value.from?.id;
   const commentId = value.comment_id;
   const pageId = process.env.PAGE_ID!;
+  console.log("=== FACEBOOK VERIFY ===");
+  console.log("postId:", postId);
+  console.log("userId:", userId);
+  console.log("commentId:", commentId);
+  console.log("pageId:", pageId, value.from?.id);
 
   // 1️⃣ กันลูป: ไม่ตอบ comment จากเพจ
   if (value.from?.id === pageId) return ok();
 
   // 2️⃣ กัน webhook ซ้ำ
+  console.log("isCommentProcessed");
   if (await isCommentProcessed(commentId)) return ok();
 
   console.log(value.post_id);
   // 3️⃣ ตรวจ post config
+  console.log("getPostAction");
   const config = getPostAction(postId);
   if (!config) return ok();
 
   // 4️⃣ ตรวจ trigger text
+  console.log("trigger text");
   const text = (value.message || "").trim();
+  console.log("trigger text:", text);
   if (config.triggerText && text !== config.triggerText) return ok();
 
   if (await hasUserUsedPostToday(userId, postId)) {
@@ -61,6 +70,7 @@ export async function POST(req: NextRequest) {
   }
 
   //  ตอบจริง
+  console.log("TODO");
   await config.todo(commentId);
 
   // บันทึก state
